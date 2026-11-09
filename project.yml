@@ -1,0 +1,163 @@
+# Xcode project definition for XcodeGen (https://github.com/yonaskolb/XcodeGen).
+#
+#   brew install xcodegen
+#   xcodegen generate
+#   open AdBlock.xcodeproj
+#
+# Before running on a device change the three settings below:
+# APP_BUNDLE_ID, APP_GROUP_ID and DEVELOPMENT_TEAM.
+name: AdBlock
+
+options:
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    APP_BUNDLE_ID: com.enzyss.adblock
+    APP_GROUP_ID: group.com.enzyss.adblock
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.9"
+    TARGETED_DEVICE_FAMILY: "1,2"
+
+packages:
+  AdBlockCore:
+    path: Packages/AdBlockCore
+
+targets:
+  AdBlock:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+    dependencies:
+      - package: AdBlockCore
+      - target: ContentBlockerAds
+      - target: ContentBlockerPrivacy
+      - target: ContentBlockerAnnoyances
+      - target: PacketTunnel
+      - sdk: NetworkExtension.framework
+      - sdk: SafariServices.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
+        PRODUCT_NAME: AdBlock
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    info:
+      path: Config/App-Info.plist
+      properties:
+        CFBundleDisplayName: AdBlock
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        AppGroupID: $(APP_GROUP_ID)
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIBackgroundModes:
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - $(APP_BUNDLE_ID).refresh
+    entitlements:
+      path: Config/AdBlock.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - $(APP_GROUP_ID)
+        com.apple.developer.networking.networkextension:
+          - packet-tunnel-provider
+    scheme: {}
+
+  # Safari content blockers: one extension per 150k-rule bucket.
+  ContentBlockerAds:
+    templates: [ContentBlocker]
+    templateAttributes:
+      category: ads
+      suffix: Ads
+      displayName: AdBlock Pubblicità
+
+  ContentBlockerPrivacy:
+    templates: [ContentBlocker]
+    templateAttributes:
+      category: privacy
+      suffix: Privacy
+      displayName: AdBlock Privacy
+
+  ContentBlockerAnnoyances:
+    templates: [ContentBlocker]
+    templateAttributes:
+      category: annoyances
+      suffix: Annoyances
+      displayName: AdBlock Fastidi
+
+  # System-wide DNS filter (blocks ads inside apps).
+  PacketTunnel:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Extensions/PacketTunnel
+    dependencies:
+      - package: AdBlockCore
+      - sdk: NetworkExtension.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).PacketTunnel
+        PRODUCT_NAME: PacketTunnel
+    info:
+      path: Config/PacketTunnel-Info.plist
+      properties:
+        CFBundleDisplayName: AdBlock DNS
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        AppGroupID: $(APP_GROUP_ID)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.networkextension.packet-tunnel
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PacketTunnelProvider
+    entitlements:
+      path: Config/PacketTunnel.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - $(APP_GROUP_ID)
+        com.apple.developer.networking.networkextension:
+          - packet-tunnel-provider
+
+targetTemplates:
+  ContentBlocker:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Extensions/ContentBlocker
+    dependencies:
+      - package: AdBlockCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).ContentBlocker.${suffix}
+        PRODUCT_NAME: ContentBlocker${suffix}
+    info:
+      path: Config/ContentBlocker${suffix}-Info.plist
+      properties:
+        CFBundleDisplayName: ${displayName}
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        AppGroupID: $(APP_GROUP_ID)
+        BlockerCategory: ${category}
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.Safari.content-blocker
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ContentBlockerRequestHandler
+    entitlements:
+      path: Config/ContentBlocker${suffix}.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - $(APP_GROUP_ID)

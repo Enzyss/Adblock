@@ -1,0 +1,34 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Core unit tests (+ WebKit compile of the real filter lists)
+        env:
+          ADBLOCK_LIVE_TESTS: "1"
+        run: swift test --package-path Packages/AdBlockCore
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build iOS app (simulator, unsigned)
+        run: |
+          xcodebuild build \
+            -project AdBlock.xcodeproj \
+            -scheme AdBlock \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            -quiet
