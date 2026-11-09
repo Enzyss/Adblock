@@ -5,10 +5,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write # publish the IPA as a GitHub release
+
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -26,22 +29,49 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build iOS app (simulator, unsigned)
+      - name: Build iOS app (device, Release, unsigned)
         run: |
           xcodebuild build \
             -project AdBlock.xcodeproj \
             -scheme AdBlock \
-            -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             -quiet
 
       - name: Check the extensions are embedded correctly
         run: |
-          APP=build/Build/Products/Debug-iphonesimulator/AdBlock.app
+          APP=build/Build/Products/Release-iphoneos/AdBlock.app
           ls "$APP/PlugIns"
+          for ext in ContentBlockerAds ContentBlockerPrivacy ContentBlockerAnnoyances PacketTunnel YouTubeExtension; do
+            test -d "$APP/PlugIns/$ext.appex"
+          done
           test -f "$APP/PlugIns/YouTubeExtension.appex/manifest.json"
           test -f "$APP/PlugIns/YouTubeExtension.appex/youtube-main.js"
-          test -f "$APP/PlugIns/YouTubeExtension.appex/icon-128.png"
-          plutil -extract NSExtension.NSExtensionPointIdentifier raw "$APP/PlugIns/YouTubeExtension.appex/Info.plist"
+          plutil -extract AppGroupID raw "$APP/Info.plist"
+
+      - name: Package IPAs
+        run: scripts/package-ipa.sh build/Build/Products/Release-iphoneos/AdBlock.app dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AdBlock-ipa
+          path: |
+            dist/*.ipa
+            Profiles/AdBlock-DNS.mobileconfig
+
+      - name: Publish release "latest"
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest \
+            dist/AdBlock.ipa \
+            dist/AdBlock-FreeAccount.ipa \
+            Profiles/AdBlock-DNS.mobileconfig \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "AdBlock – ultima build (${GITHUB_SHA::7})" \
+            --notes-file scripts/release-notes.md

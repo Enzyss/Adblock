@@ -34,6 +34,21 @@ Il traffico normale **non passa dal tunnel**: viene instradato solo un indirizzo
 - **Account Apple Developer a pagamento (99 €/anno)** per il blocco nelle app: le Network Extension (`packet-tunnel-provider`) non sono disponibili con l'account gratuito. Le sole estensioni di Safari funzionano anche con l'account gratuito (rimuovendo il target `PacketTunnel` e il relativo entitlement).
 - iPhone con iOS 16 o successivo
 
+## Scaricare l'IPA (sideload con iLoader, SideStore, AltStore…)
+
+A ogni push la GitHub Action compila l'app e pubblica le IPA **non firmate** nella release
+[`latest`](https://github.com/Enzyss/Adblock/releases/tag/latest):
+
+| File | Per chi |
+|---|---|
+| `AdBlock.ipa` | Account sviluppatore **a pagamento**: tutto incluso, anche il blocco nelle app tramite VPN locale |
+| `AdBlock-FreeAccount.ipa` | Apple ID **gratuito**: Safari + YouTube (senza la VPN locale, che Apple non concede agli account gratuiti) |
+| `AdBlock-DNS.mobileconfig` | Blocco nelle app **senza VPN e senza account a pagamento** (DNS cifrato di AdGuard) |
+
+Gli eseguibili sono firmati ad-hoc con i loro entitlement, così il tool di firma sa quali capability richiedere (App Group, Network Extension).
+L'app legge l'App Group effettivo da `embedded.mobileprovision`, quindi continua a funzionare anche se il tool lo rinomina (es. `group.com.enzyss.adblock.TEAMID`).
+Con Apple ID gratuito: l'app occupa 5 App ID (app + 4 estensioni) e la firma scade dopo 7 giorni.
+
 ## Come compilarla e installarla
 
 1. Apri `project.yml` e modifica:
@@ -64,6 +79,8 @@ Extensions/
   ContentBlocker/               Codice condiviso dalle 3 estensioni Safari
   PacketTunnel/                 Filtro DNS di sistema (VPN locale)
   YouTubeWebExtension/          Estensione Safari per YouTube (JavaScript + test)
+Profiles/AdBlock-DNS.mobileconfig  Profilo DNS per il blocco nelle app senza VPN
+scripts/package-ipa.sh          Crea le IPA non firmate
 Packages/AdBlockCore/           Logica pura e testata:
   SafariRuleConverter.swift     Sintassi Adblock → regole Safari
   DomainBlocklist.swift         Lista domini compatta (hash 64 bit, ~8 byte/dominio)

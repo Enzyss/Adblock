@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>DNSSettings</key>
+			<dict>
+				<key>DNSProtocol</key>
+				<string>HTTPS</string>
+				<key>ServerAddresses</key>
+				<array>
+					<string>94.140.14.14</string>
+					<string>94.140.15.15</string>
+					<string>2a10:50c0::ad1:ff</string>
+					<string>2a10:50c0::ad2:ff</string>
+				</array>
+				<key>ServerURL</key>
+				<string>https://dns.adguard-dns.com/dns-query</string>
+			</dict>
+			<key>PayloadDisplayName</key>
+			<string>AdBlock DNS (AdGuard)</string>
+			<key>PayloadIdentifier</key>
+			<string>com.enzyss.adblock.profile.adguard.dns</string>
+			<key>PayloadType</key>
+			<string>com.apple.dnsSettings.managed</string>
+			<key>PayloadUUID</key>
+			<string>47E67ECD-293F-4BBA-A2B3-2BC8D638C3B2</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>Blocca pubblicità e tracker in tutte le app tramite DNS cifrato (DNS-over-HTTPS) di AdGuard. Funziona senza VPN e senza account sviluppatore a pagamento. Si rimuove da Impostazioni &gt; Generali &gt; VPN e gestione dispositivo.</string>
+	<key>PayloadDisplayName</key>
+	<string>AdBlock DNS (AdGuard)</string>
+	<key>PayloadIdentifier</key>
+	<string>com.enzyss.adblock.profile.adguard</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>A950CA5C-2A76-4415-8F67-58DA6A8266FA</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>

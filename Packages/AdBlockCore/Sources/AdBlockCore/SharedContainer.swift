@@ -5,9 +5,34 @@ import Foundation
 ///
 /// The App Group identifier is injected in every target's Info.plist under
 /// the `AppGroupID` key (see `project.yml`), so it only lives in one place.
+///
+/// Sideloading tools (iLoader, SideStore, AltStore...) re-sign the app with
+/// their own App Group (e.g. `group.com.enzyss.adblock.ABCDE12345`). To keep
+/// the app and its extensions talking to each other, the group actually
+/// granted in `embedded.mobileprovision` wins over the Info.plist value.
 public enum SharedContainer {
-    public static var groupIdentifier: String {
-        (Bundle.main.object(forInfoDictionaryKey: "AppGroupID") as? String) ?? "group.com.enzyss.adblock"
+    public static let groupIdentifier: String = {
+        let configured = (Bundle.main.object(forInfoDictionaryKey: "AppGroupID") as? String) ?? "group.com.enzyss.adblock"
+        guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
+              let data = try? Data(contentsOf: url),
+              let groups = appGroups(fromProvisioningProfile: data),
+              !groups.isEmpty
+        else { return configured }
+        return groups.first { $0 == configured }
+            ?? groups.first { $0.hasPrefix(configured) }
+            ?? groups[0]
+    }()
+
+    /// Extracts the App Groups from a (CMS signed) provisioning profile.
+    public static func appGroups(fromProvisioningProfile data: Data) -> [String]? {
+        guard let start = data.range(of: Data("<?xml".utf8)),
+              let end = data.range(of: Data("</plist>".utf8), in: start.lowerBound..<data.endIndex)
+        else { return nil }
+        let plistData = data.subdata(in: start.lowerBound..<end.upperBound)
+        guard let plist = try? PropertyListSerialization.propertyList(from: plistData, format: nil) as? [String: Any],
+              let entitlements = plist["Entitlements"] as? [String: Any]
+        else { return nil }
+        return entitlements["com.apple.security.application-groups"] as? [String]
     }
 
     public static var url: URL {

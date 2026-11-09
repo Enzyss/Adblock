@@ -52,6 +52,22 @@ final class DNSFilterTests: XCTestCase {
         XCTAssertNil(DomainBlocklist(serialized: Data("garbage".utf8)))
     }
 
+    // MARK: Sideloading
+
+    func testReadsAppGroupsFromProvisioningProfile() {
+        let plist = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <plist version="1.0"><dict><key>Entitlements</key><dict>
+        <key>com.apple.security.application-groups</key>
+        <array><string>group.com.enzyss.adblock.ABCDE12345</string></array>
+        </dict></dict></plist>
+        """
+        // Real profiles wrap the plist in binary CMS data.
+        let profile = Data([0x30, 0x82, 0x01, 0x00]) + Data(plist.utf8) + Data([0xA0, 0x00, 0x31])
+        XCTAssertEqual(SharedContainer.appGroups(fromProvisioningProfile: profile), ["group.com.enzyss.adblock.ABCDE12345"])
+        XCTAssertNil(SharedContainer.appGroups(fromProvisioningProfile: Data("nothing".utf8)))
+    }
+
     // MARK: Packets
 
     func testBlockedQueryGetsNullAnswer() throws {

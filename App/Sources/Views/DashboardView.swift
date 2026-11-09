@@ -7,6 +7,7 @@ struct DashboardView: View {
     @EnvironmentObject private var tunnel: TunnelManager
     @State private var showSafariGuide = false
     @State private var showYouTubeGuide = false
+    @State private var showDNSProfileGuide = false
     @State private var activity = DNSActivity()
 
     var body: some View {
@@ -25,6 +26,7 @@ struct DashboardView: View {
             .refreshable { await filters.update() }
             .sheet(isPresented: $showSafariGuide) { SafariSetupGuide() }
             .sheet(isPresented: $showYouTubeGuide) { YouTubeSetupGuide() }
+            .sheet(isPresented: $showDNSProfileGuide) { DNSProfileGuide() }
             .task {
                 while !Task.isCancelled {
                     activity = DNSActivity.load()
@@ -36,7 +38,8 @@ struct DashboardView: View {
 
     private var protectionLevel: StatusHeader.Level {
         let safari = filters.anySafariBlockerEnabled
-        let apps = tunnel.status == .connected
+        // Without the tunnel (free build) we can't know if the DNS profile is installed.
+        let apps = TunnelManager.isTunnelAvailable ? tunnel.status == .connected : true
         switch (safari, apps) {
         case (true, true): return filters.allSafariBlockersEnabled ? .full : .partial
         case (true, false), (false, true): return .partial
@@ -97,7 +100,39 @@ struct DashboardView: View {
         }
     }
 
+    @ViewBuilder
     private var appsSection: some View {
+        if TunnelManager.isTunnelAvailable {
+            tunnelSection
+        } else {
+            dnsProfileSection
+        }
+    }
+
+    private var dnsProfileSection: some View {
+        Section {
+            Button {
+                showDNSProfileGuide = true
+            } label: {
+                HStack {
+                    Image(systemName: "network.badge.shield.half.filled")
+                        .foregroundStyle(Color.accentColor)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Blocca pubblicità nelle app").foregroundStyle(Color.primary)
+                        Text("Installa il profilo DNS (gratis, senza VPN)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        } header: {
+            Text("App")
+        } footer: {
+            Text("Questa versione è per Apple ID gratuito, che non permette la VPN locale. Il profilo DNS blocca comunque pubblicità e tracker in tutte le app.")
+        }
+    }
+
+    private var tunnelSection: some View {
         Section {
             Toggle(isOn: Binding(
                 get: { tunnel.isActive },
@@ -295,5 +330,39 @@ struct SetupStep: View {
             Text(text)
         }
         .padding(.vertical, 4)
+    }
+}
+
+struct DNSProfileGuide: View {
+    static let profileURL = URL(string: "https://github.com/Enzyss/Adblock/releases/download/latest/AdBlock-DNS.mobileconfig")!
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    SetupStep(number: 1, text: "Tocca **Scarica profilo DNS** qui sotto: si apre Safari. Se chiede conferma, tocca **Consenti**.")
+                    SetupStep(number: 2, text: "Apri **Impostazioni**: in alto compare **Profilo scaricato**. Toccalo e poi **Installa**.\n(Se il file è finito in **File**, aprilo da lì.)")
+                    SetupStep(number: 3, text: "Fatto: pubblicità e tracker vengono bloccati in tutte le app, anche con i dati mobili.")
+                } footer: {
+                    Text("Il profilo imposta il DNS cifrato di AdGuard (DNS-over-HTTPS), che filtra i domini pubblicitari. Non usa la VPN e non consuma batteria. Per rimuoverlo: Impostazioni → Generali → VPN e gestione dispositivo.")
+                }
+                Section {
+                    Button("Scarica profilo DNS") { openURL(Self.profileURL) }
+                    Button("Apri Impostazioni") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                    }
+                }
+            }
+            .navigationTitle("Blocco nelle app")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fine") { dismiss() }
+                }
+            }
+        }
     }
 }

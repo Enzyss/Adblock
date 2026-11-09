@@ -27,6 +27,13 @@ final class TunnelManager: ObservableObject {
         Task { await load() }
     }
 
+    /// False in the "FreeAccount" build, where the VPN extension is removed
+    /// because free Apple IDs can't sign Network Extensions.
+    static let isTunnelAvailable: Bool = {
+        guard let plugins = Bundle.main.builtInPlugInsURL else { return false }
+        return FileManager.default.fileExists(atPath: plugins.appendingPathComponent("PacketTunnel.appex").path)
+    }()
+
     var isActive: Bool {
         switch status {
         case .connected, .connecting, .reasserting: return true
