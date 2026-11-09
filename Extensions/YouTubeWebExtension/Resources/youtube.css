@@ -1,0 +1,51 @@
+/* AdBlock YouTube – hides ad containers on youtube.com and m.youtube.com */
+
+/* Desktop layout */
+#player-ads,
+#masthead-ad,
+#panels > ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"],
+ytd-ad-slot-renderer,
+ytd-in-feed-ad-layout-renderer,
+ytd-banner-promo-renderer,
+ytd-statement-banner-renderer,
+ytd-promoted-sparkles-web-renderer,
+ytd-promoted-video-renderer,
+ytd-compact-promoted-video-renderer,
+ytd-display-ad-renderer,
+ytd-search-pyv-renderer,
+ytd-brand-video-shelf-renderer,
+ytd-brand-video-singleton-renderer,
+ytd-enforcement-message-view-model,
+.ytd-merch-shelf-renderer,
+.ytp-ad-overlay-container,
+.ytp-ad-image-overlay,
+.ytp-ad-text-overlay,
+.ytp-featured-product,
+.ytp-suggested-action,
+
+/* Mobile layout (m.youtube.com) */
+ytm-promoted-sparkles-web-renderer,
+ytm-promoted-sparkles-text-search-renderer,
+ytm-promoted-video-renderer,
+ytm-companion-ad-renderer,
+ytm-companion-slot,
+ytm-ad-slot-renderer,
+ytm-in-feed-ad-layout-renderer,
+ytm-display-ad-renderer,
+ytm-banner-promo-renderer,
+ytm-statement-banner-renderer,
+ytm-brand-video-singleton-renderer,
+ytm-enforcement-message-view-model,
+.ytm-promoted-sparkles-web-renderer,
+.ad-container,
+.video-ads,
+.ytp-ad-module {
+  display: none !important;
+}
+
+/* Kept in a separate rule: if :has() were unsupported, the whole list above would be dropped. */
+ytd-rich-item-renderer:has(> #content > ytd-ad-slot-renderer),
+ytm-rich-item-renderer:has(> ytm-ad-slot-renderer),
+ytm-item-section-renderer:has(> lazy-list > ytm-ad-slot-renderer) {
+  display: none !important;
+}

@@ -5,6 +5,7 @@ Config/*.entitlements
 
 # Xcode / SwiftPM
 DerivedData/
+build/
 .build/
 .swiftpm/
 *.xcuserstate

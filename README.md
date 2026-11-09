@@ -5,6 +5,7 @@ App iOS che blocca pubblicità, tracker e banner dei cookie **in Safari** e **ne
 | Dove | Come funziona | Cosa blocca |
 |---|---|---|
 | **Safari** (e le app che usano Safari View Controller) | 3 estensioni *Content Blocker* (Pubblicità, Privacy, Fastidi) con le regole di EasyList, EasyList Italy, EasyPrivacy, Cookie List… convertite nel formato di Safari | Richieste verso server pubblicitari, tracker, elementi della pagina (banner, box sponsorizzati, avvisi cookie) |
+| **YouTube in Safari** | Una *Safari Web Extension* (come fanno Brave e uBlock Origin) che toglie gli spot dai dati del video prima che il lettore li legga; se uno sfugge viene silenziato, accelerato e saltato | Spot prima/durante i video, annunci nel feed e nei risultati, popup "ad blocker non consentiti" |
 | **Tutte le app** | Una *VPN locale* (Network Extension `NEPacketTunnelProvider`) che fa solo da **filtro DNS**: le richieste DNS verso domini pubblicitari ricevono `0.0.0.0`, le altre vengono inoltrate al DNS scelto (Cloudflare, Quad9, Google, AdGuard) | Pubblicità in-app (AdMob, Unity Ads, AppLovin, Facebook Audience…), tracker e analytics |
 
 Il traffico normale **non passa dal tunnel**: viene instradato solo un indirizzo fittizio (`198.18.0.1`) usato come server DNS. Quindi niente rallentamenti, consumo di batteria minimo e nessun dato inviato a server esterni oltre alle normali risoluzioni DNS.
@@ -21,7 +22,7 @@ Il traffico normale **non passa dal tunnel**: viene instradato solo un indirizzo
 
 ## Limiti (onesti) di iOS
 
-- **YouTube**: le pubblicità di YouTube (app e sito) arrivano dagli stessi server dei video, quindi né il filtro DNS né i content blocker possono rimuoverle senza bloccare anche i video. Nessun ad blocker iOS senza jailbreak ci riesce in modo affidabile nell'app ufficiale.
+- **YouTube**: gli spot vengono rimossi **solo su youtube.com aperto in Safari** (estensione AdBlock YouTube). Nell'**app ufficiale** non è possibile: gli spot arrivano dagli stessi server dei video e iOS non permette a nessuna estensione di modificare un'altra app. YouTube cambia spesso il suo codice contro gli ad blocker, quindi lo script potrebbe dover essere aggiornato.
 - Alcune pubblicità in-app servite dallo stesso dominio dei contenuti (es. Instagram, Facebook, TikTok) non sono bloccabili via DNS.
 - Il blocco nelle app usa lo slot VPN di iOS: non può essere attivo **insieme a un'altra VPN**.
 - Safari non supporta scriptlet e CSS esteso: questi filtri vengono ignorati (l'app mostra quanti).
@@ -48,6 +49,7 @@ Il traffico normale **non passa dal tunnel**: viene instradato solo un indirizzo
 4. Sull'iPhone:
    - Apri l'app: al primo avvio scarica e compila i filtri.
    - **Safari**: Impostazioni → App → Safari → Estensioni → attiva *AdBlock Pubblicità*, *AdBlock Privacy* e *AdBlock Fastidi*.
+   - **YouTube**: nella stessa schermata attiva *AdBlock YouTube* e in *Permessi* imposta youtube.com su *Consenti*. Poi apri m.youtube.com in Safari (anche dalla schermata Home).
    - **App**: nell'app attiva *Blocca pubblicità nelle app* e accetta l'aggiunta della configurazione VPN.
 
 ## Struttura del progetto
@@ -61,6 +63,7 @@ App/                            App SwiftUI
 Extensions/
   ContentBlocker/               Codice condiviso dalle 3 estensioni Safari
   PacketTunnel/                 Filtro DNS di sistema (VPN locale)
+  YouTubeWebExtension/          Estensione Safari per YouTube (JavaScript + test)
 Packages/AdBlockCore/           Logica pura e testata:
   SafariRuleConverter.swift     Sintassi Adblock → regole Safari
   DomainBlocklist.swift         Lista domini compatta (hash 64 bit, ~8 byte/dominio)
@@ -75,6 +78,8 @@ Packages/AdBlockCore/           Logica pura e testata:
 swift test --package-path Packages/AdBlockCore
 # Test completo: scarica le liste reali e le fa compilare a WebKit
 ADBLOCK_LIVE_TESTS=1 swift test --package-path Packages/AdBlockCore
+# Script YouTube
+node --test Extensions/YouTubeWebExtension/Tests/*.test.mjs
 ```
 
 La GitHub Action in `.github/workflows/build.yml` esegue i test (compresi quelli con le liste reali) e compila l'app per il simulatore a ogni push.

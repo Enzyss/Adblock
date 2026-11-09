@@ -17,6 +17,9 @@ jobs:
           ADBLOCK_LIVE_TESTS: "1"
         run: swift test --package-path Packages/AdBlockCore
 
+      - name: YouTube extension script tests
+        run: node --test Extensions/YouTubeWebExtension/Tests/*.test.mjs
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
@@ -30,5 +33,15 @@ jobs:
             -scheme AdBlock \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             -quiet
+
+      - name: Check the extensions are embedded correctly
+        run: |
+          APP=build/Build/Products/Debug-iphonesimulator/AdBlock.app
+          ls "$APP/PlugIns"
+          test -f "$APP/PlugIns/YouTubeExtension.appex/manifest.json"
+          test -f "$APP/PlugIns/YouTubeExtension.appex/youtube-main.js"
+          test -f "$APP/PlugIns/YouTubeExtension.appex/icon-128.png"
+          plutil -extract NSExtension.NSExtensionPointIdentifier raw "$APP/PlugIns/YouTubeExtension.appex/Info.plist"

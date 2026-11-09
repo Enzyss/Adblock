@@ -6,6 +6,7 @@ struct DashboardView: View {
     @EnvironmentObject private var filters: FilterManager
     @EnvironmentObject private var tunnel: TunnelManager
     @State private var showSafariGuide = false
+    @State private var showYouTubeGuide = false
     @State private var activity = DNSActivity()
 
     var body: some View {
@@ -23,6 +24,7 @@ struct DashboardView: View {
             .navigationTitle("AdBlock")
             .refreshable { await filters.update() }
             .sheet(isPresented: $showSafariGuide) { SafariSetupGuide() }
+            .sheet(isPresented: $showYouTubeGuide) { YouTubeSetupGuide() }
             .task {
                 while !Task.isCancelled {
                     activity = DNSActivity.load()
@@ -64,6 +66,23 @@ struct DashboardView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            Button {
+                showYouTubeGuide = true
+            } label: {
+                HStack {
+                    Image(systemName: "play.rectangle.fill")
+                        .foregroundStyle(Color.red)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("YouTube").foregroundStyle(Color.primary)
+                        Text("Rimuove gli spot dai video aperti in Safari")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Text("Come attivare")
+                        .font(.caption)
+                }
+            }
             if !filters.allSafariBlockersEnabled {
                 Button {
                     showSafariGuide = true
@@ -74,7 +93,7 @@ struct DashboardView: View {
         } header: {
             Text("Safari")
         } footer: {
-            Text("Blocca pubblicità, tracker e banner dei cookie nelle pagine web di Safari e delle app che usano Safari.")
+            Text("Blocca pubblicità, tracker e banner dei cookie nelle pagine web di Safari e delle app che usano Safari. L'estensione YouTube funziona su youtube.com aperto in Safari, non nell'app YouTube.")
         }
     }
 
@@ -201,7 +220,7 @@ struct SafariSetupGuide: View {
                 Section {
                     step(1, "Apri l'app **Impostazioni**.")
                     step(2, "Vai su **App** → **Safari** → **Estensioni**.\n(Su iOS 17 o precedenti: **Safari** → **Estensioni**)")
-                    step(3, "Attiva **AdBlock Pubblicità**, **AdBlock Privacy** e **AdBlock Fastidi**.")
+                    step(3, "Attiva **AdBlock Pubblicità**, **AdBlock Privacy**, **AdBlock Fastidi** e **AdBlock YouTube**.")
                     step(4, "Torna qui: lo stato diventerà verde.")
                 }
                 Section {
@@ -220,6 +239,54 @@ struct SafariSetupGuide: View {
     }
 
     private func step(_ number: Int, _ text: LocalizedStringKey) -> some View {
+        SetupStep(number: number, text: text)
+    }
+}
+
+struct YouTubeSetupGuide: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    step(1, "Apri **Impostazioni** → **App** → **Safari** → **Estensioni**.")
+                    step(2, "Tocca **AdBlock YouTube** e attiva l'estensione.")
+                    step(3, "In **Permessi** imposta **youtube.com** su **Consenti**.\n(Oppure in Safari, su youtube.com: tocca il pulsante a sinistra dell'indirizzo → **AdBlock YouTube** → **Consenti sempre**.)")
+                    step(4, "Apri **m.youtube.com** in Safari. Consiglio: Condividi → **Aggiungi alla schermata Home** per usarlo come un'app.")
+                } footer: {
+                    Text("Le pubblicità vengono rimosse dai dati del video prima che il lettore le mostri; se ne sfugge una viene silenziata e saltata in automatico. Non funziona nell'app ufficiale di YouTube: lì iOS non permette a nessuna estensione di intervenire.")
+                }
+                Section {
+                    Button("Apri Impostazioni") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                    }
+                    Button("Apri YouTube in Safari") {
+                        if let url = URL(string: "https://m.youtube.com") { openURL(url) }
+                    }
+                }
+            }
+            .navigationTitle("YouTube senza pubblicità")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fine") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func step(_ number: Int, _ text: LocalizedStringKey) -> some View {
+        SetupStep(number: number, text: text)
+    }
+}
+
+struct SetupStep: View {
+    let number: Int
+    let text: LocalizedStringKey
+
+    var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Text("\(number)")
                 .font(.headline)

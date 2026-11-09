@@ -41,6 +41,7 @@ targets:
       - target: ContentBlockerPrivacy
       - target: ContentBlockerAnnoyances
       - target: PacketTunnel
+      - target: YouTubeExtension
       - sdk: NetworkExtension.framework
       - sdk: SafariServices.framework
     settings:
@@ -101,6 +102,31 @@ targets:
       category: annoyances
       suffix: Annoyances
       displayName: AdBlock Fastidi
+
+  # Safari Web Extension: removes YouTube video/feed ads with JavaScript.
+  YouTubeExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Extensions/YouTubeWebExtension/SafariWebExtensionHandler.swift
+      # Copied flat into the extension bundle (manifest.json at the root).
+      - path: Extensions/YouTubeWebExtension/Resources
+        buildPhase: resources
+    dependencies:
+      - sdk: SafariServices.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).YouTube
+        PRODUCT_NAME: YouTubeExtension
+    info:
+      path: Config/YouTubeExtension-Info.plist
+      properties:
+        CFBundleDisplayName: AdBlock YouTube
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.Safari.web-extension
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).SafariWebExtensionHandler
 
   # System-wide DNS filter (blocks ads inside apps).
   PacketTunnel:
