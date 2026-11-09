@@ -8,7 +8,7 @@ struct AdBlockApp: App {
     @StateObject private var tunnel = TunnelManager()
     @Environment(\.scenePhase) private var scenePhase
 
-    static var refreshTaskIdentifier: String {
+    nonisolated static var refreshTaskIdentifier: String {
         (Bundle.main.bundleIdentifier ?? "com.enzyss.adblock") + ".refresh"
     }
 
@@ -44,7 +44,7 @@ struct AdBlockApp: App {
     }
 
     /// Keeps the filter lists fresh (iOS decides the exact timing).
-    static func scheduleBackgroundRefresh() {
+    nonisolated static func scheduleBackgroundRefresh() {
         let request = BGAppRefreshTaskRequest(identifier: refreshTaskIdentifier)
         request.earliestBeginDate = Date(timeIntervalSinceNow: 24 * 3600)
         try? BGTaskScheduler.shared.submit(request)
